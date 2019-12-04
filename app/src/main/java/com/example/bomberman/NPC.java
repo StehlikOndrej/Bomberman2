@@ -11,6 +11,7 @@ public class NPC extends Thread {
     boolean moving = false;
     public boolean running = true;
     int destroy = 0;
+    final int moveTime = 1000;
 
     NPC(BombermanView view, int x, int y){
         this.view = view;
@@ -136,7 +137,7 @@ public class NPC extends Thread {
                     }
 
                 } else {
-                    Thread.sleep(5000);
+                    Thread.sleep(moveTime);
                     straightMoving();
                 }
             } catch (InterruptedException e) {

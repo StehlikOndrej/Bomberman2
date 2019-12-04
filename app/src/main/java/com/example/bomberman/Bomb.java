@@ -1,15 +1,22 @@
 package com.example.bomberman;
 
+import android.content.Context;
+import android.media.MediaPlayer;
+
 public class Bomb extends Thread {
     public int X;
     public int Y;
+    public Context context;
+
+    final int explosionTime = 2000;
 
     BombermanView view;
 
-    Bomb(BombermanView view, int x, int y){
+    Bomb(BombermanView view, int x, int y, Context context){
         this.view = view;
         this.X = x;
         this.Y = y;
+        this.context = context;
     }
 
     public int getPosition(){
@@ -18,12 +25,13 @@ public class Bomb extends Thread {
 
     public void run() {
         try {
-            Thread.sleep(3000);
+            Thread.sleep(explosionTime);
+            view.deleteBomb(this);
+            explode();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        view.deleteBomb(this);
-        explode();
+
         if (Thread.interrupted()) {
             // We've been interrupted: no more crunching.
             return;
@@ -32,20 +40,27 @@ public class Bomb extends Thread {
     }
 
     public void explode(){
+
+        MediaPlayer mediaPlayer = MediaPlayer.create(context, R.raw.explosionwaw);
+        mediaPlayer.start();
+
         for (int i = 0; i < 2; i++){
-            if(view.map[X+i + Y*10] < view.map.length && view.map[X+i + Y*10] < 6)
+            if(view.map[X+i + Y*10] < view.map.length && view.map[X+i + Y*10] < 6){
                 view.map[X+i + Y*10] = 0;
+                view.set.add(X+i + Y*10);}
 
-            if(view.map[X + (Y+i)*10] < view.map.length && view.map[X + (Y+i)*10] < 6)
+            if(view.map[X + (Y+i)*10] < view.map.length && view.map[X + (Y+i)*10] < 6){
                 view.map[X + (Y+i)*10] = 0;
+                view.set.add(X + (Y+i)*10);}
 
-            if(view.map[X-i + Y*10] > 0 && view.map[X-i + Y*10] < 6)
+            if(view.map[X-i + Y*10] > 0 && view.map[X-i + Y*10] < 6){
                 view.map[X-i + Y*10] = 0;
+                view.set.add(X-i + Y*10);}
 
-            if(view.map[X + (Y-i)*10] > 0 && view.map[X + (Y-i)*10] < 6)
+            if(view.map[X + (Y-i)*10] > 0 && view.map[X + (Y-i)*10] < 6){
                 view.map[X + (Y-i)*10] = 0 ;
+                view.set.add(X + (Y-i)*10);}
         }
-
 
         for (int i = 0; i < view.npcs.size();i++){
             int x = view.npcs.get(i).X;

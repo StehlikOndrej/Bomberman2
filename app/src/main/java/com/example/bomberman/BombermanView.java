@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.media.MediaPlayer;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -15,7 +16,12 @@ import android.widget.Toast;
 import androidx.core.view.GestureDetectorCompat;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class BombermanView extends View{
@@ -49,6 +55,9 @@ public class BombermanView extends View{
 
     ArrayList<Bomb> bombs = new ArrayList<>();
     ArrayList<NPC> npcs = new ArrayList<>();
+    ArrayList<Integer> explosions = new ArrayList<Integer>();
+    Set<Integer> set;
+
 
 
         public int map[] = {
@@ -83,7 +92,9 @@ public class BombermanView extends View{
     }
 
     private void init(Context context) {
-        bmp = new Bitmap[7];
+        bmp = new Bitmap[8];
+        set = new LinkedHashSet<>(explosions);
+
 
 
         bmp[0] = BitmapFactory.decodeResource(getResources(), R.drawable.tile);
@@ -93,6 +104,7 @@ public class BombermanView extends View{
         bmp[4] = BitmapFactory.decodeResource(getResources(), R.drawable.bomb_tile);
         bmp[5] = BitmapFactory.decodeResource(getResources(), R.drawable.obstacle);
         bmp[6] = BitmapFactory.decodeResource(getResources(), R.drawable.wall);
+        bmp[7] = BitmapFactory.decodeResource(getResources(), R.drawable.tile_explosion);
 
         for(int i = 0; i < map.length; i++){
             if(map[i] == 3){
@@ -178,7 +190,7 @@ public class BombermanView extends View{
 
     public void dropBomb() {
         if (bombs.size() < 3) {
-            Bomb bomb = new Bomb(this, heroX, heroY);
+            Bomb bomb = new Bomb(this, heroX, heroY, context);
             bomb.start();
             bombs.add(bomb);
             invalidate();
@@ -224,6 +236,10 @@ public class BombermanView extends View{
 
     @Override
     protected void onDraw(Canvas canvas) {
+        int iterator = 0;
+        explosions.addAll(set);
+        Collections.sort(explosions);
+
         for (int i = 0; i < lx; i++) {
             for (int j = 0; j < ly; j++) {
 
@@ -239,11 +255,24 @@ public class BombermanView extends View{
                         else map[i*10+j] = 2;
                     }
                 }
-                canvas.drawBitmap(bmp[map[i*10+j]], null,
-                        new Rect(j*width, i*height,(j+1)*width, (i+1)*height), null);
+               if( explosions.size() > 0 ){
+                   if(explosions.get(iterator) == (i*10+j)){
+                        canvas.drawBitmap(bmp[7], null,
+                                new Rect(j*width, i*height,(j+1)*width, (i+1)*height), null);
+                        if(iterator < explosions.size() - 1){
+                            iterator++;} }
+
+                   else {
+                       canvas.drawBitmap(bmp[map[i*10+j]], null,
+                               new Rect(j*width, i*height,(j+1)*width, (i+1)*height), null);
+                   }
+                }else{
+                   canvas.drawBitmap(bmp[map[i*10+j]], null,
+                           new Rect(j*width, i*height,(j+1)*width, (i+1)*height), null);
+               }
             }
         }
-
+        explosions.clear();
+        set.clear();
     }
-
 }
