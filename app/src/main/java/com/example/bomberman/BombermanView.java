@@ -1,6 +1,7 @@
 package com.example.bomberman;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -15,6 +16,10 @@ import android.widget.Toast;
 
 import androidx.core.view.GestureDetectorCompat;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -23,6 +28,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+
+import static android.content.Context.MODE_PRIVATE;
 
 public class BombermanView extends View{
 
@@ -30,6 +39,7 @@ public class BombermanView extends View{
     final Context context = getContext();
 
     private static final long DOUBLE_CLICK_TIME_DELTA = 200;//milliseconds
+    public static final String MY_PREFS_NAME = "MyPrefsFile";
 
     long lastClickTime = 0;
     long clickTime = 0;
@@ -53,27 +63,17 @@ public class BombermanView extends View{
     float xDiff,yDiff;
     float threshold = 100;
 
+    String maps[];
+
     ArrayList<Bomb> bombs = new ArrayList<>();
     ArrayList<NPC> npcs = new ArrayList<>();
     ArrayList<Integer> explosions = new ArrayList<Integer>();
     Set<Integer> set;
+    ArrayList<int[]> mapList = new ArrayList<int[]>();
 
 
-
-        public int map[] = {
-            6,6,6,6,6,6,6,6,6,6,
-            6,0,0,0,0,0,0,0,5,6,
-            6,0,6,0,6,5,6,0,5,6,
-            6,0,5,0,5,0,5,1,5,6,
-            6,0,6,0,6,5,6,0,5,6,
-            6,0,5,0,5,5,5,0,5,6,
-            6,0,6,3,6,5,6,0,5,6,
-            6,0,0,0,0,0,0,0,5,6,
-            6,3,5,5,5,5,5,5,5,6,
-            6,6,6,6,6,6,6,6,6,6
-    };
-    public int[] saveMap = map.clone();
-
+    int[] map = new int[100];
+    int mapid;
 
 
     public BombermanView(Context context) {
@@ -95,8 +95,6 @@ public class BombermanView extends View{
         bmp = new Bitmap[8];
         set = new LinkedHashSet<>(explosions);
 
-
-
         bmp[0] = BitmapFactory.decodeResource(getResources(), R.drawable.tile);
         bmp[1] = BitmapFactory.decodeResource(getResources(), R.drawable.tile_bomberman);
         bmp[2] = BitmapFactory.decodeResource(getResources(), R.drawable.tile_bomberman_bomb);
@@ -105,6 +103,23 @@ public class BombermanView extends View{
         bmp[5] = BitmapFactory.decodeResource(getResources(), R.drawable.obstacle);
         bmp[6] = BitmapFactory.decodeResource(getResources(), R.drawable.wall);
         bmp[7] = BitmapFactory.decodeResource(getResources(), R.drawable.tile_explosion);
+
+        SharedPreferences prefs = context.getSharedPreferences(MY_PREFS_NAME, MODE_PRIVATE);
+        heroY = prefs.getInt("heroY", 3);
+        heroX = prefs.getInt("heroX", 7);
+        map = loadMap("mapPrefrence",context);
+        mapid = prefs.getInt("mapid",0);
+
+        try {
+            readMap("map.txt");
+        } catch (IOException e) {
+            e.printStackTrace();
+            Toast.makeText(context,"Mapa se nenacetla",Toast.LENGTH_LONG).show();
+        }
+        if(map.length < 6){
+            map = mapList.get(0).clone();
+            mapid = 0;
+        }
 
         for(int i = 0; i < map.length; i++){
             if(map[i] == 3){
@@ -117,6 +132,7 @@ public class BombermanView extends View{
                 npcs.add(npc);
             }
         }
+
 
     }
 
@@ -203,9 +219,15 @@ public class BombermanView extends View{
         invalidate();
     }
 
+    public void setMap(int id){
+        mapid = id;
+        map = mapList.get(mapid);
+    }
+
     public void restart(){
         heroX = heroXSave;
         heroY = heroYSave;
+
         for (int i = 0; i < bombs.size();i++){
             bombs.get(i).interrupt();
             bombs.remove(i);
@@ -217,7 +239,7 @@ public class BombermanView extends View{
             npcs.remove(i);
         }
         npcs.clear();
-        map = saveMap.clone();
+        map = mapList.get(mapid).clone();
 
         for(int i = 0; i < map.length; i++){
             if(map[i] == 3){
@@ -272,7 +294,75 @@ public class BombermanView extends View{
                }
             }
         }
+
+        if(map[heroX+heroY*10]==4){
+            canvas.drawBitmap(bmp[2], null,
+                    new Rect(heroX*width, heroY*height,(heroX+1)*width, (heroY+1)*height), null);
+        }
+
+        if(npcs.size() < 1){
+            restart();
+        }
+
+        SharedPreferences.Editor editor = context.getSharedPreferences(MY_PREFS_NAME, MODE_PRIVATE).edit();
+        editor.putInt("heroX", heroX);
+        editor.putInt("heroY", heroY);
+        editor.putInt("mapid", mapid);
+        editor.commit();
+        saveMap(map,"mapPrefrence", context);
+
         explosions.clear();
         set.clear();
+    }
+
+    private void readMap (String map) throws IOException {
+        int[] result = new int[100];
+        int j = 0;
+        String str = "";
+        InputStream is = getContext().getAssets().open(map);
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            if (is != null){
+                while ((str = reader.readLine()) != null){
+                    str = str.replace(",","");
+
+                    if(str.contains("*")){
+                        j = 0;
+                        mapList.add(result);
+                        System.out.println("nactena jedna mapa");
+                        result = new int[100];
+
+                    }else {
+                        for (int i = 0; i < str.length(); i++) {
+                            result[j] = Character.getNumericValue(str.charAt(i));
+                            j++;
+                        }
+                    }
+                }
+            }
+        }catch (Exception e){
+            System.out.println("mapa se nenacetla");
+            Toast.makeText(context,"Mapa se nenacetla",Toast.LENGTH_LONG).show();
+        }
+        return;
+    }
+
+    public boolean saveMap(int[] array, String arrayName, Context mContext) {
+        SharedPreferences prefs = mContext.getSharedPreferences(MY_PREFS_NAME, 0);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putInt(arrayName +"_size", array.length);
+
+        for(int i=0;i<array.length;i++)
+            editor.putInt(arrayName + "_" + i, array[i]);
+        return editor.commit();
+    }
+
+    public int[] loadMap(String arrayName, Context mContext) {
+        SharedPreferences prefs = mContext.getSharedPreferences(MY_PREFS_NAME, 0);
+        int size = prefs.getInt(arrayName + "_size", 0);
+        int array[] = new int[size];
+        for(int i=0;i<size;i++)
+            array[i] = prefs.getInt(arrayName + "_" + i, 0);
+        return array;
     }
 }

@@ -144,11 +144,6 @@ public class NPC extends Thread {
                 e.printStackTrace();
             }
 
-            /*System.out.println((X+Y*10) + "+" + (view.heroX + view.heroY*10));
-            if((X+Y*10) == (view.heroX + view.heroY*10) ){
-                view.restart();
-            }*/
-
             //bug fix, some NPCs remained active after restart
             destroy = 0;
             for(int i = 0; i < view.npcs.size(); i++){

@@ -36,9 +36,17 @@ public class MainActivity extends AppCompatActivity  {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
+        BombermanView bw = findViewById(R.id.bombermanView);
         switch (item.getItemId()){
             case R.id.restart:
-                BombermanView bw = findViewById(R.id.bombermanView);
+                bw.restart();
+
+            case R.id.map1:
+                bw.setMap(0);
+                bw.restart();
+
+            case R.id.map2:
+                bw.setMap(1);
                 bw.restart();
 
             default:
