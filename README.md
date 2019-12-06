@@ -2,8 +2,8 @@
 #### Features implemented
 >   canvas\
    gestures\
-   threads
+   threads\
+   audio\
+   shared preferences
 #### Features to be implemented(might change)
->   audio\
-    shared preferences\
-   	list view
+>list view
