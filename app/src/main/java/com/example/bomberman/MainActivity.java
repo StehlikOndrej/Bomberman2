@@ -15,42 +15,66 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+
 public class MainActivity extends AppCompatActivity  {
 
     public BombermanView view;
+    int choice;
+    ArrayList<String> list = new ArrayList<>();
+    private static final int MENU_FIRST = Menu.FIRST;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         view = findViewById(R.id.bombermanView);
+
+        Bundle extras = getIntent().getExtras();
+        list = extras.getStringArrayList("list");
+        choice = extras.getInt("choice");
+        if(choice > 0){
+            setMap(choice-1);
+        }
+    }
+
+    public void setMap(int id){
+        BombermanView bw = findViewById(R.id.bombermanView);
+        bw.setMapid(id);
+        bw.restart();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.game_menu, menu);
+        list.remove(0);
+        //MenuInflater inflater = getMenuInflater();
+        //inflater.inflate(R.menu.game_menu, menu);
+        menu.add(0,0,0,"Restart");
+        int index = 1;
+        for (String item: list){
+            menu.add(0,index,0,item);
+            index++;
+        }
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    public boolean onOptionsItemSelected( MenuItem item) {
+        super.onOptionsItemSelected(item);
 
         BombermanView bw = findViewById(R.id.bombermanView);
+        System.out.println(item.getItemId());
+
         switch (item.getItemId()){
-            case R.id.restart:
+            case 0:
                 bw.restart();
-
-            case R.id.map1:
-                bw.setMap(0);
-                bw.restart();
-
-            case R.id.map2:
-                bw.setMap(1);
-                bw.restart();
-
+                break;
             default:
-                return super.onOptionsItemSelected(item);
+                bw.setMapid(item.getItemId()-1);
+                bw.restart();
+                break;
         }
+
+        return super.onOptionsItemSelected(item);
     }
 }

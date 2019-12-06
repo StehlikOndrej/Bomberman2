@@ -4,10 +4,4 @@
     <item android:id="@+id/restart"
     android:title="Restart" />
 
-    <item android:id="@+id/map1"
-        android:title="Map 1" />
-
-    <item android:id="@+id/map2"
-        android:title="Map 2" />
-
 </menu>

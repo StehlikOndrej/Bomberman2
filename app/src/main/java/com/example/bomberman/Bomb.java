@@ -2,6 +2,7 @@ package com.example.bomberman;
 
 import android.content.Context;
 import android.media.MediaPlayer;
+import android.widget.Toast;
 
 public class Bomb extends Thread {
     public int X;
@@ -33,7 +34,6 @@ public class Bomb extends Thread {
         }
 
         if (Thread.interrupted()) {
-            // We've been interrupted: no more crunching.
             return;
         }
 
@@ -72,9 +72,13 @@ public class Bomb extends Thread {
             }
         }
 
+
+
         if(view.map[view.heroX + view.heroY*10] > 2 || view.map[view.heroX + view.heroY*10] == 0 ){
             view.restart();
+            Toast.makeText(context,"You have lost", Toast.LENGTH_LONG).show();
         }
 
+        this.interrupt();
     }
 }

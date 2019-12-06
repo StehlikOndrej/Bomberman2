@@ -20,7 +20,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -40,6 +42,7 @@ public class BombermanView extends View{
 
     private static final long DOUBLE_CLICK_TIME_DELTA = 200;//milliseconds
     public static final String MY_PREFS_NAME = "MyPrefsFile";
+    SharedPreferences.Editor editor;
 
     long lastClickTime = 0;
     long clickTime = 0;
@@ -49,7 +52,6 @@ public class BombermanView extends View{
 
     int width;
     int height;
-
 
     private int heroXSave = 7;
     private int heroYSave = 3;
@@ -63,17 +65,16 @@ public class BombermanView extends View{
     float xDiff,yDiff;
     float threshold = 100;
 
-    String maps[];
 
     ArrayList<Bomb> bombs = new ArrayList<>();
     ArrayList<NPC> npcs = new ArrayList<>();
     ArrayList<Integer> explosions = new ArrayList<Integer>();
     Set<Integer> set;
-    ArrayList<int[]> mapList = new ArrayList<int[]>();
+    ArrayList<int[]> mapList = new ArrayList<>();
 
 
     int[] map = new int[100];
-    int mapid;
+    int mapid = 0;
 
 
     public BombermanView(Context context) {
@@ -112,14 +113,14 @@ public class BombermanView extends View{
 
         try {
             readMap("map.txt");
+            if(map.length < 6){
+                map = mapList.get(0).clone();
+            }
         } catch (IOException e) {
             e.printStackTrace();
             Toast.makeText(context,"Mapa se nenacetla",Toast.LENGTH_LONG).show();
         }
-        if(map.length < 6){
-            map = mapList.get(0).clone();
-            mapid = 0;
-        }
+
 
         for(int i = 0; i < map.length; i++){
             if(map[i] == 3){
@@ -132,15 +133,6 @@ public class BombermanView extends View{
                 npcs.add(npc);
             }
         }
-
-
-    }
-
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        width = w / ly;
-        height = h / lx;
-        super.onSizeChanged(w, h, oldw, oldh);
     }
 
     public void move(int X, int Y){
@@ -151,6 +143,115 @@ public class BombermanView extends View{
             map[heroX + heroY *10 ] = 1;
             invalidate();
         }
+    }
+
+    public void dropBomb() {
+        if (bombs.size() < 3) {
+            Bomb bomb = new Bomb(this, heroX, heroY, context);
+            bomb.start();
+            bombs.add(bomb);
+            invalidate();
+        }
+    }
+
+    public void deleteBomb(Bomb bomb){
+        map[bomb.getPosition()] = 0;
+        bombs.remove(bomb);
+        invalidate();
+    }
+
+    public void setMapid(int id){
+        mapid = (id);
+    }
+
+    public void restart(){
+        heroX = heroXSave;
+        heroY = heroYSave;
+
+        for (int i = 0; i < bombs.size();i++){
+            bombs.get(i).interrupt();
+            bombs.remove(i);
+        }
+
+        for (int i = 0; i < npcs.size();i++){
+            npcs.get(i).running = false;
+            npcs.get(i).interrupt();
+            npcs.remove(i);
+        }
+        npcs.clear();
+        bombs.clear();
+
+        map = mapList.get(mapid).clone();
+
+        for(int i = 0; i < map.length; i++){
+            if(map[i] == 3){
+
+                int y = i / 10;
+                int x = i % 10;
+
+                NPC npc = new NPC(this,x,y);
+                npc.start();
+                npcs.add(npc);
+            }
+        }
+        //Toast.makeText(context,"YOU HAVE LOST, GAME IS RESTARTING",Toast.LENGTH_LONG).show();
+        invalidate();
+    }
+
+    private void readMap (String map) throws IOException {
+        int[] result = new int[100];
+        int j = 0;
+        String str;
+        InputStream is = getContext().getAssets().open(map);
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            if (is != null){
+                while ((str = reader.readLine()) != null){
+                    str = str.replace(",","");
+
+                    if(str.contains("*")){
+                        j = 0;
+                        mapList.add(result);
+                        System.out.println("nactena jedna mapa");
+                        result = new int[100];
+
+                    }else {
+                        for (int i = 0; i < str.length(); i++) {
+                            result[j] = Character.getNumericValue(str.charAt(i));
+                            j++;
+                        }
+                    }
+                }
+            }
+        }catch (Exception e){
+            System.out.println("mapa se nenacetla");
+            Toast.makeText(context,"Mapa se nenacetla",Toast.LENGTH_LONG).show();
+        }
+        return;
+    }
+
+    public boolean saveMap(int[] array, String arrayName, Context mContext) {
+        editor.putInt(arrayName +"_size", array.length);
+
+        for(int i=0;i<array.length;i++)
+            editor.putInt(arrayName + "_" + i, array[i]);
+        return editor.commit();
+    }
+
+    public int[] loadMap(String arrayName, Context mContext) {
+        SharedPreferences prefs = mContext.getSharedPreferences(MY_PREFS_NAME, 0);
+        int size = prefs.getInt(arrayName + "_size", 0);
+        int array[] = new int[size];
+        for(int i=0;i<size;i++)
+            array[i] = prefs.getInt(arrayName + "_" + i, 0);
+        return array;
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        width = w / ly;
+        height = h / lx;
+        super.onSizeChanged(w, h, oldw, oldh);
     }
 
     @Override
@@ -204,58 +305,6 @@ public class BombermanView extends View{
         return true;
     }
 
-    public void dropBomb() {
-        if (bombs.size() < 3) {
-            Bomb bomb = new Bomb(this, heroX, heroY, context);
-            bomb.start();
-            bombs.add(bomb);
-            invalidate();
-        }
-    }
-
-    public void deleteBomb(Bomb bomb){
-        map[bomb.getPosition()] = 0;
-        bombs.remove(bomb);
-        invalidate();
-    }
-
-    public void setMap(int id){
-        mapid = id;
-        map = mapList.get(mapid);
-    }
-
-    public void restart(){
-        heroX = heroXSave;
-        heroY = heroYSave;
-
-        for (int i = 0; i < bombs.size();i++){
-            bombs.get(i).interrupt();
-            bombs.remove(i);
-        }
-
-        for (int i = 0; i < npcs.size();i++){
-            npcs.get(i).running = false;
-            npcs.get(i).interrupt();
-            npcs.remove(i);
-        }
-        npcs.clear();
-        map = mapList.get(mapid).clone();
-
-        for(int i = 0; i < map.length; i++){
-            if(map[i] == 3){
-
-                int y = i / 10;
-                int x = i % 10;
-
-                NPC npc = new NPC(this,x,y);
-                npc.start();
-                npcs.add(npc);
-            }
-        }
-        //Toast.makeText(context,"YOU HAVE LOST, GAME IS RESTARTING",Toast.LENGTH_LONG).show();
-        invalidate();
-    }
-
     @Override
     protected void onDraw(Canvas canvas) {
         int iterator = 0;
@@ -277,21 +326,23 @@ public class BombermanView extends View{
                         else map[i*10+j] = 2;
                     }
                 }
-               if( explosions.size() > 0 ){
-                   if(explosions.get(iterator) == (i*10+j)){
+
+                //draw of explosion or normal draw
+                if( explosions.size() > 0 ){
+                    if(explosions.get(iterator) == (i*10+j)){
                         canvas.drawBitmap(bmp[7], null,
                                 new Rect(j*width, i*height,(j+1)*width, (i+1)*height), null);
                         if(iterator < explosions.size() - 1){
                             iterator++;} }
 
-                   else {
-                       canvas.drawBitmap(bmp[map[i*10+j]], null,
-                               new Rect(j*width, i*height,(j+1)*width, (i+1)*height), null);
-                   }
+                    else {
+                        canvas.drawBitmap(bmp[map[i*10+j]], null,
+                                new Rect(j*width, i*height,(j+1)*width, (i+1)*height), null);
+                    }
                 }else{
-                   canvas.drawBitmap(bmp[map[i*10+j]], null,
-                           new Rect(j*width, i*height,(j+1)*width, (i+1)*height), null);
-               }
+                    canvas.drawBitmap(bmp[map[i*10+j]], null,
+                            new Rect(j*width, i*height,(j+1)*width, (i+1)*height), null);
+                }
             }
         }
 
@@ -301,68 +352,22 @@ public class BombermanView extends View{
         }
 
         if(npcs.size() < 1){
+            if(mapid+1 < mapList.size()){
+                mapid++;
+            }
             restart();
+            MediaPlayer mediaPlayer = MediaPlayer.create(context, R.raw.levelup);
+            mediaPlayer.start();
+            Toast.makeText(context,"Moving to another level", Toast.LENGTH_LONG).show();
         }
 
-        SharedPreferences.Editor editor = context.getSharedPreferences(MY_PREFS_NAME, MODE_PRIVATE).edit();
+        editor = context.getSharedPreferences(MY_PREFS_NAME, MODE_PRIVATE).edit();
         editor.putInt("heroX", heroX);
         editor.putInt("heroY", heroY);
         editor.putInt("mapid", mapid);
-        editor.commit();
         saveMap(map,"mapPrefrence", context);
 
         explosions.clear();
         set.clear();
-    }
-
-    private void readMap (String map) throws IOException {
-        int[] result = new int[100];
-        int j = 0;
-        String str = "";
-        InputStream is = getContext().getAssets().open(map);
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-            if (is != null){
-                while ((str = reader.readLine()) != null){
-                    str = str.replace(",","");
-
-                    if(str.contains("*")){
-                        j = 0;
-                        mapList.add(result);
-                        System.out.println("nactena jedna mapa");
-                        result = new int[100];
-
-                    }else {
-                        for (int i = 0; i < str.length(); i++) {
-                            result[j] = Character.getNumericValue(str.charAt(i));
-                            j++;
-                        }
-                    }
-                }
-            }
-        }catch (Exception e){
-            System.out.println("mapa se nenacetla");
-            Toast.makeText(context,"Mapa se nenacetla",Toast.LENGTH_LONG).show();
-        }
-        return;
-    }
-
-    public boolean saveMap(int[] array, String arrayName, Context mContext) {
-        SharedPreferences prefs = mContext.getSharedPreferences(MY_PREFS_NAME, 0);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putInt(arrayName +"_size", array.length);
-
-        for(int i=0;i<array.length;i++)
-            editor.putInt(arrayName + "_" + i, array[i]);
-        return editor.commit();
-    }
-
-    public int[] loadMap(String arrayName, Context mContext) {
-        SharedPreferences prefs = mContext.getSharedPreferences(MY_PREFS_NAME, 0);
-        int size = prefs.getInt(arrayName + "_size", 0);
-        int array[] = new int[size];
-        for(int i=0;i<size;i++)
-            array[i] = prefs.getInt(arrayName + "_" + i, 0);
-        return array;
     }
 }
