@@ -4,6 +4,6 @@
    gestures\
    threads\
    audio\
-   shared preferences
+   shared preferences\
+   list view
 #### Features to be implemented(might change)
->list view
