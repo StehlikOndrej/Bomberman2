@@ -6,6 +6,7 @@ import androidx.core.view.GestureDetectorCompat;
 
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.Menu;
@@ -19,10 +20,14 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity  {
 
+
     public BombermanView view;
     int choice;
     ArrayList<String> list = new ArrayList<>();
     private static final int MENU_FIRST = Menu.FIRST;
+
+    final Handler mHandler = new Handler();
+    private Thread mUiThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,12 +35,15 @@ public class MainActivity extends AppCompatActivity  {
         setContentView(R.layout.activity_main);
         view = findViewById(R.id.bombermanView);
 
+
         Bundle extras = getIntent().getExtras();
         list = extras.getStringArrayList("list");
         choice = extras.getInt("choice");
         if(choice > 0){
             setMap(choice-1);
         }
+
+
     }
 
     public void setMap(int id){
@@ -77,4 +85,6 @@ public class MainActivity extends AppCompatActivity  {
 
         return super.onOptionsItemSelected(item);
     }
+
+
 }

@@ -37,11 +37,14 @@ public class Bomb extends Thread {
             return;
         }
 
+        return;
+
     }
 
     public void explode(){
 
         MediaPlayer mediaPlayer = MediaPlayer.create(context, R.raw.explosionwaw);
+        mediaPlayer.setVolume(0.5f, 0.5f);
         mediaPlayer.start();
 
         for (int i = 0; i < 2; i++){
@@ -75,10 +78,13 @@ public class Bomb extends Thread {
 
 
         if(view.map[view.heroX + view.heroY*10] > 2 || view.map[view.heroX + view.heroY*10] == 0 ){
+            //view.toast();
             view.restart();
-            Toast.makeText(context,"You have lost", Toast.LENGTH_LONG).show();
+
         }
 
         this.interrupt();
     }
+
+
 }

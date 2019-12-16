@@ -66,6 +66,7 @@ public class BombermanView extends View{
     float threshold = 100;
 
 
+    BackgroundSounds mBackgroundSound = new BackgroundSounds(context);
     ArrayList<Bomb> bombs = new ArrayList<>();
     ArrayList<NPC> npcs = new ArrayList<>();
     ArrayList<Integer> explosions = new ArrayList<Integer>();
@@ -93,6 +94,7 @@ public class BombermanView extends View{
     }
 
     private void init(Context context) {
+        mBackgroundSound.execute();
         bmp = new Bitmap[8];
         set = new LinkedHashSet<>(explosions);
 
@@ -156,6 +158,8 @@ public class BombermanView extends View{
 
     public void deleteBomb(Bomb bomb){
         map[bomb.getPosition()] = 0;
+
+        bomb.interrupt();
         bombs.remove(bomb);
         invalidate();
     }
@@ -194,7 +198,6 @@ public class BombermanView extends View{
                 npcs.add(npc);
             }
         }
-        //Toast.makeText(context,"YOU HAVE LOST, GAME IS RESTARTING",Toast.LENGTH_LONG).show();
         invalidate();
     }
 
@@ -245,6 +248,10 @@ public class BombermanView extends View{
         for(int i=0;i<size;i++)
             array[i] = prefs.getInt(arrayName + "_" + i, 0);
         return array;
+    }
+
+    public void toast(){
+        Toast.makeText(context,"You have lost", Toast.LENGTH_LONG).show();
     }
 
     @Override
@@ -355,8 +362,12 @@ public class BombermanView extends View{
             if(mapid+1 < mapList.size()){
                 mapid++;
             }
+            else{
+                mapid = 0;
+            }
             restart();
             MediaPlayer mediaPlayer = MediaPlayer.create(context, R.raw.levelup);
+            mediaPlayer.setVolume(0.5f, 0.5f);
             mediaPlayer.start();
             Toast.makeText(context,"Moving to another level", Toast.LENGTH_LONG).show();
         }
